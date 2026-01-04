@@ -1,6 +1,6 @@
 //
 //  AccessibilityAction.swift
-//  Macnium
+//  AXium
 //
 //  Created by Wttch on 2024/11/13.
 //
@@ -10,7 +10,7 @@ import OSLog
 /// 辅助功能对象的操作
 /// - seeAlso: [applicationservices](https://developer.apple.com/documentation/applicationservices/axactionconstants_h/miscellaneous_defines)
 /// - seeAlso: [AppKit](https://developer.apple.com/documentation/appkit/nsaccessibility/action)
-enum AccessibilityAction: String {
+public enum AccessibilityAction: String {
     /// 模拟按下取消按钮
     case cancel = "AXCancel"
     /// 模拟按下 Return 键

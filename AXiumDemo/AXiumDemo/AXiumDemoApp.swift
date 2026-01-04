@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AXium
 
 @main
 struct AXiumDemoApp: App {

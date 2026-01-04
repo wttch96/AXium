@@ -1,6 +1,6 @@
 //
 //  AccessibilityApplication.swift
-//  Macnium
+//  AXium
 //
 //  Created by Wttch on 2024/11/10.
 //
@@ -63,8 +63,8 @@ extension AccessibilityApplication {
 }
 
 extension AccessibilityApplication {
-    func findElement(matching predicate: (AccessibilityElement) -> Bool) throws -> AccessibilityElement? {
-        return try root.find { predicate($0) }
+    public func findElement(matching predicate: (AccessibilityElement) -> Bool) -> AccessibilityElement? {
+        return root.find { predicate($0) }
     }
 
     func visit(_ element: AccessibilityElement, _ deep: Int, _ block: (AccessibilityElement, Int) throws -> Void) {

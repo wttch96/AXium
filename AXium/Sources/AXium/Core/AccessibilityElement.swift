@@ -1,6 +1,6 @@
 //
 //  AccessibilityElement.swift
-//  Macnium
+//  AXium
 //
 //  本文件主要是对 AXUIElement 对象的封装
 //
@@ -10,7 +10,7 @@
 import ApplicationServices
 import OSLog
 
-fileprivate let logger = Logger(subsystem: "com.wttch.Macnium", category: "AccessibilityElement")
+fileprivate let logger = Logger(subsystem: "com.wttch.AXium", category: "AccessibilityElement")
 
 /// 对 `AXUIElement` 进行封装
 public struct AccessibilityElement: Identifiable, Hashable, @unchecked Sendable {
@@ -51,7 +51,7 @@ fileprivate extension AXUIElement {
     /// - Parameter attribute: 属性键
     /// - Throws: 如果无法检索属性值, 或者类型不匹配, 则抛出错误
     /// - Returns: 属性值
-    func attribute<O, T>(_ attribute: AccessibilityAttributeKey<O, T>) throws -> T? {
+    func attribute<O, T>(_ attribute: AccessibilityAttributeKey<O, T>) -> T? {
         var value: CFTypeRef?
         let error = AXUIElementCopyAttributeValue(self, attribute.key as CFString, &value)
 
@@ -60,25 +60,28 @@ fileprivate extension AXUIElement {
         }
 
         guard error == .success else {
-            throw AccessibilityError.error(error)
+            logger.error("获取属性 \(attribute.key) 失败: \(error.rawValue)")
+            return nil
         }
         guard let value = value as? O
         else {
-            throw AccessibilityError.unexpectedTypeError(expected: T.self, actual: type(of: value))
+            logger.error("属性 \(attribute.key) 类型不匹配: 期望类型 \(O.self), 实际类型 \(type(of: value))")
+            return nil
         }
 
         return attribute.convertFunc(value)
     }
 
     func requiredAttribute<O, T>(_ attribute: AccessibilityAttributeKey<O, T>) throws -> T {
-        guard let value = try self.attribute(attribute) else {
+        guard let value = self.attribute(attribute) else {
             throw AccessibilityError.logicError("属性值不存在")
         }
         return value
     }
 
     func requiredAttribute<O, T>(_ attribute: AccessibilityAttributeKey<O, [T]>) throws -> [T] {
-        guard let value = try self.attribute(attribute) else {
+        guard let value = self.attribute(attribute) else {
+            // TODO: 区分属性不存在和属性值为空的情况
             return []
         }
         return value
@@ -127,10 +130,17 @@ public extension AccessibilityElement {
         }
     }
 
-    var description: String? {
-        get throws {
-            try original.attribute(.description)
+    func getAttribute<O, T>(_ attribute: AccessibilityAttributeKey<O, T>) -> T? {
+        do {
+            return try original.attribute(attribute)
+        } catch {
+            logger.error("获取属性 \(attribute.key) 失败: \(error.localizedDescription)")
+            return attribute.defaultValue
         }
+    }
+
+    var description: String? {
+        getAttribute(.description)
     }
 
     /// 指示元素启用状态的标志(原始数据为 `NSNumber`, 已经转换为 `Bool`).
@@ -203,8 +213,11 @@ public extension AccessibilityElement {
     /// - seeAlso: [Roles](https://developer.apple.com/documentation/appkit/nsaccessibility/role)
     /// - seeAlso: [kaxroleattribute](https://developer.apple.com/documentation/applicationservices/kaxroleattribute)
     var role: AccessibilityRole {
-        get throws {
-            try original.requiredAttribute(.role)
+        do {
+            return try original.requiredAttribute(.role)
+        } catch {
+            logger.error("获取角色失败: \(error.localizedDescription)")
+            return .unknown
         }
     }
 
@@ -230,6 +243,12 @@ public extension AccessibilityElement {
         }
     }
 
+    var label: String? {
+        get throws {
+            try original.attribute(.label)
+        }
+    }
+
     var position: CGPoint? {
         get throws {
             try original.attribute(.position)
@@ -245,20 +264,16 @@ public extension AccessibilityElement {
     }
 
     var size: CGSize? {
-        get throws {
-            try original.attribute(.size)
-        }
+        original.attribute(.size)
     }
 
     var topLevelElement: Self? {
-        get throws {
-            try original.attribute(.topLevelUIElement)
-        }
+        original.attribute(.topLevelUIElement)
     }
 
-    var parent: Self? {
+    var parent: Self {
         get throws {
-            try original.attribute(.parent)
+            try original.requiredAttribute(.parent)
         }
     }
 
@@ -273,13 +288,16 @@ public extension AccessibilityElement {
 
 // MARK: - 元素定位
 
-extension AccessibilityElement {
-    func find(_ condition: (AccessibilityElement) -> Bool) throws -> AccessibilityElement? {
+public extension AccessibilityElement {
+    func find(_ condition: (AccessibilityElement) -> Bool) -> AccessibilityElement? {
         if condition(self) {
             return self
         }
-        for child in try children {
-            if let element = try child.find(condition) {
+        guard let children = try? children else {
+            return nil
+        }
+        for child in children {
+            if let element = child.find(condition) {
                 return element
             }
         }
@@ -291,7 +309,7 @@ extension AccessibilityElement {
 
 extension AccessibilityElement {
     /// 模拟单击操作, 例如点击按钮.
-    func perform(_ action: AccessibilityAction) -> Bool {
+    public func perform(_ action: AccessibilityAction) -> Bool {
         let result = AXUIElementPerformAction(original, action.rawValue as CFString)
         return result == .success
     }
@@ -329,5 +347,15 @@ extension AccessibilityElement {
             logger.error("未知操作: \($0)")
             return .unknown
         }
+    }
+
+    public func setValue(value: String) -> Bool {
+        let result = AXUIElementSetAttributeValue(
+            original,
+            kAXValueAttribute as CFString,
+            value as CFTypeRef
+        )
+
+        return result == .success
     }
 }

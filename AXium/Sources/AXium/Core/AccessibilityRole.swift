@@ -1,6 +1,6 @@
 //
 //  AccessibilityRole.swift
-//  Macnium
+//  AXium
 //
 //  Created by Wttch on 2024/11/12.
 //

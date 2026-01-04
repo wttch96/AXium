@@ -1,6 +1,6 @@
 //
 //  AccessibilityElementAttribute.swift
-//  Macnium
+//  AXium
 //
 //  Created by Wttch on 2024/11/10.
 //
@@ -9,17 +9,23 @@ import ApplicationServices
 /// 辅助功能属性键, 对原始键进行了包装, 使其可以指定键对应值的类型.
 /// 不使用 enum 是因为 enum 无法指定关联值的类型(如果使用 `Any`则和手动转换无异).
 public struct AccessibilityAttributeKey<O, T> {
+    /// 属性键名称
     let key: String
+    /// 原始类型, 未转换前类型
     let originalType: O.Type
+    /// 转换后类型
     let convertedType: T.Type
-
+    /// 转换函数
     let convertFunc: (O) -> T?
-
-    init(key: String, convertFunc: @escaping (O) -> T?) {
+    /// 默认值
+    let defaultValue: T?
+    
+    init(key: String, convertFunc: @escaping (O) -> T?, defaultValue: T? = nil) {
         self.key = key
         self.originalType = O.self
         self.convertedType = T.self
         self.convertFunc = convertFunc
+        self.defaultValue = defaultValue
     }
 
     init(key: String) where O == T {
@@ -30,6 +36,8 @@ public struct AccessibilityAttributeKey<O, T> {
 // MARK: 原始属性
 
 private typealias OriginalAttribute<O> = AccessibilityAttributeKey<O, O>
+
+
 
 extension OriginalAttribute<[Any]> {
     static var allowedValues: Self {
@@ -109,6 +117,10 @@ extension StringAttribute {
     static var title: Self {
         .init(key: kAXTitleAttribute)
     }
+    
+    static var label: Self {
+        .init(key: kAXLabelValueAttribute)
+    }
 
     static var help: Self {
         .init(key: kAXHelpAttribute)
@@ -141,9 +153,9 @@ extension ConvertibleStringAttributeWithRawValue<AccessibilityRole> {
             if let role: T = .init(rawValue: $0) {
                 return role
             }
-            Macnium.logger.warning("Unknown AXUIElement role: \($0)")
+            AXium.logger.warning("Unknown AXUIElement role: \($0)")
             return .unknown
-        })
+        }, defaultValue: .unknown)
     }
 }
 
@@ -154,7 +166,7 @@ extension ConvertibleStringAttributeWithRawValue<AccessibilitySubrole> {
                 return subrole
             }
 
-            Macnium.logger.warning("Unknown AXUIElement subrole: \($0)")
+            AXium.logger.warning("Unknown AXUIElement subrole: \($0)")
             return .unknown
         })
     }
