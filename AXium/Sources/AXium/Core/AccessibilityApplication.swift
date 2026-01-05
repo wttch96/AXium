@@ -21,6 +21,15 @@ public struct AccessibilityApplication {
 }
 
 extension AccessibilityApplication {
+    /// 检查具有指定 bundle identifier 的应用程序是否正在运行
+    /// - Parameter bundleId: 应用程序的 bundle identifier
+    public static func isRunning(bundleId: String) -> Bool {
+        return NSRunningApplication.runningApplications(withBundleIdentifier: bundleId)
+            .isEmpty == false
+    }
+}
+
+extension AccessibilityApplication {
     /// 使用具有指定运行应用程序的辅助功能对象创建顶级辅助功能对象
     init(application: NSRunningApplication) {
         self.init(pid: application.processIdentifier)

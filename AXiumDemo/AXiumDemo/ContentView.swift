@@ -22,8 +22,9 @@ struct ContentView: View {
             Image(systemName: "globe")
                 .imageScale(.large)
                 .foregroundStyle(.tint)
-            TextField("Enter your name", text: $text)
-                .textFieldStyle(.roundedBorder)
+            TextEditor(text: $text)
+                .border(Color.gray, width: 1)
+                .frame(height: 100)
                 .padding()
             Text("Hello, world!")
             
@@ -31,12 +32,13 @@ struct ContentView: View {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 600, height: 400)
+                    .frame(width: 1000)
             }
 
             Button("获取权限", action: {
                 do {
                     let appId = "com.roadesign.Codyeapp"
+                    // 如果程序没启动则启动程序, 使用 apple api
                     let appElement = AccessibilityApplication(withBundleIdentifier: appId)!
                     let element = appElement.findElement { element in
                         
